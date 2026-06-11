@@ -37,6 +37,15 @@ class Telegram:
             username = self._get_username(message)
             users = self._load_users()
             role = users.get(username, {}).get("role")
+            strikes = users.get(username, {}).get("strikes")
+
+            # TODO: add config file where you can set your preferred max strikes
+            if strikes >= 5:
+                self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                users[username]["role"] = "banned"
+                self._save_users(users)
+                logging.info(f"{username} has been banned after exceding the maximum ammount of strikes.")
+                return
 
             if role == "banned":
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
@@ -47,8 +56,8 @@ class Telegram:
                 return
 
             auth_token = secrets.token_urlsafe(24)
-            self.pending_tokens[auth_token] = {
-                "username": username,
+            self.pending_tokens[username] = {
+                "auth_token": auth_token,
                 "chat_id": message.chat.id,
             }
 
@@ -60,6 +69,14 @@ class Telegram:
             username = self._get_username(message)
             users = self._load_users()
             role = users.get(username, {}).get("role")
+            strikes = users.get(username, {}).get("strikes")
+
+            if strikes >= 5:
+                self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                users[username]["role"] = "banned"
+                self._save_users(users)
+                logging.info(f"{username} has been banned after exceding the maximum ammount of strikes.")
+                return
 
             # TODO: add reasons to bans
             if role == "banned":
@@ -71,8 +88,8 @@ class Telegram:
                 return
 
             auth_token = secrets.token_urlsafe(24)
-            self.pending_tokens[auth_token] = {
-                "username": username,
+            self.pending_tokens[username] = {
+                "auth_token": auth_token,
                 "chat_id": message.chat.id,
             }
 
@@ -84,29 +101,43 @@ class Telegram:
             username = self._get_username(message)
             users = self._load_users()
             role = users.get(username, {}).get("role")
+            strikes = users.get(username, {}).get("strikes")
 
             if role == "banned":
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
                 return
 
             text = (message.text or "").strip()
-            pending = self.pending_tokens.get(text)
+            pending = self.pending_tokens.get(username)     # returns none if the user has no pending auth token
 
-            # TODO: add 5 wrong token guesses per user and ban them
-            # make it so if the user messes up the auth token it adds a strike (now it just waits till the correct is inputted or the token of another user is)
+            # TODO: if the user happens to not have a strikes field in their data the program doesn't know how to respond (to fix)
 
             if pending is None:
                 return
-
-            if pending["username"] != username or pending["chat_id"] != message.chat.id:
-                self.bot.send_message(message.chat.id, "Invalid authentication token.")
-                # self.bot.send_message(message.chat.id, "Request a new one with the /authenticate command.")
+            
+            elif text != pending.get("auth_token"):
+                if not users[username]:
+                    self.bot.send_message(message.chat.id, "Invalid authentication token.")
+                    if strikes >= 4: self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                    else: self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
+                    users[username] = {
+                        "role": "unauthenticated",
+                        "chat_id": message.chat.id,
+                        "strikes": 1
+                    }                    
+                elif role == "unauthenticated":
+                    self.bot.send_message(message.chat.id, "Invalid authentication token.")
+                    if strikes >= 4: self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                    else: self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
+                    users[username]["strikes"] = strikes + 1
+                    self._save_users(users)
                 return
 
-            del self.pending_tokens[text]
+            del self.pending_tokens[username]
             users[username] = {
                 "role": "authenticated",
                 "chat_id": message.chat.id,
+                "strikes": 0
             }
             self._save_users(users)
             self.bot.send_message(message.chat.id, "You have been authenticated.")
@@ -140,6 +171,7 @@ class Telegram:
 
             role = data.get("role")
             chat_id = data.get("chat_id")
+            strikes = data.get("strikes")
 
             if not isinstance(role, str):
                 logging.warning("Invalid role for @%s", username)
@@ -155,6 +187,7 @@ class Telegram:
             users[username.strip().lstrip("@")] = {
                 "role": role,
                 "chat_id": chat_id,
+                "strikes": strikes
             }
 
         return users

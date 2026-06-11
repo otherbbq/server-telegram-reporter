@@ -4,6 +4,8 @@ A lightweight telegram bot for sending server events and status messages to auth
 
 ## Setup
 
+Install python 3.10 or later.
+
 Install dependencies:
 
 ```bash
@@ -49,3 +51,4 @@ This project is still in development.
 Planned features are:  
 - Custom behaviour support
 - Better logging
+- Configuration file
