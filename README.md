@@ -51,4 +51,3 @@ This project is still in development.
 Planned features are:  
 - Custom behaviour support
 - Better logging
-- Configuration file

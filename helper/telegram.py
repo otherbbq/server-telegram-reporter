@@ -3,9 +3,13 @@ import logging
 import secrets
 from pathlib import Path
 import telebot
+from helper.config import Config
 
 class Telegram:
+    # TODO: add custom config file paths by adding execution flags
+
     def __init__(self, token: str, users_file: str = "user_data.json") -> None:
+        self.config= Config(f"{Path(__file__).parent.parent}/config.json")
         self.token = token
         self.bot = telebot.TeleBot(token)
         self.users_file = Path(users_file)
@@ -17,6 +21,7 @@ class Telegram:
         self._register_handlers()
 
     def run(self) -> None:
+        self.config.load_configs()
         self.bot.infinity_polling()
 
     def send_message_to_authenticated_users(self, text: str) -> None:
@@ -38,10 +43,12 @@ class Telegram:
             users = self._load_users()
             role = users.get(username, {}).get("role")
             strikes = users.get(username, {}).get("strikes")
+            max_strikes = self.config.max_strikes
 
             # TODO: add config file where you can set your preferred max strikes
-            if strikes >= 5:
-                self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+            if strikes >= max_strikes and role != "banned":
+                # self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                self.bot.send_message(message.chat.id, "You are banned from authenticating.")
                 users[username]["role"] = "banned"
                 self._save_users(users)
                 logging.info(f"{username} has been banned after exceding the maximum ammount of strikes.")
@@ -70,9 +77,11 @@ class Telegram:
             users = self._load_users()
             role = users.get(username, {}).get("role")
             strikes = users.get(username, {}).get("strikes")
+            max_strikes = self.config.max_strikes
 
-            if strikes >= 5:
-                self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+            if strikes >= max_strikes and role != "banned":
+                # self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                self.bot.send_message(message.chat.id, "You are banned from authenticating.")
                 users[username]["role"] = "banned"
                 self._save_users(users)
                 logging.info(f"{username} has been banned after exceding the maximum ammount of strikes.")
@@ -102,6 +111,7 @@ class Telegram:
             users = self._load_users()
             role = users.get(username, {}).get("role")
             strikes = users.get(username, {}).get("strikes")
+            max_strikes = self.config.max_strikes
 
             if role == "banned":
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
@@ -118,7 +128,7 @@ class Telegram:
             elif text != pending.get("auth_token"):
                 if not users[username]:
                     self.bot.send_message(message.chat.id, "Invalid authentication token.")
-                    if strikes >= 4: self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                    if strikes >= (max_strikes - 1): self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
                     else: self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
                     users[username] = {
                         "role": "unauthenticated",
@@ -127,7 +137,7 @@ class Telegram:
                     }                    
                 elif role == "unauthenticated":
                     self.bot.send_message(message.chat.id, "Invalid authentication token.")
-                    if strikes >= 4: self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
+                    if strikes >= (max_strikes - 1): self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
                     else: self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
                     users[username]["strikes"] = strikes + 1
                     self._save_users(users)
