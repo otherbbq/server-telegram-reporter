@@ -45,9 +45,10 @@ class Telegram:
             strikes = users.get(username, {}).get("strikes")
             max_strikes = self.config.max_strikes
 
-            # TODO: add config file where you can set your preferred max strikes
+            # this check is redundant. It only checks the validity of all the data inside user_data.json
+            # TODO: bundle this code inside a function
+            
             if strikes >= max_strikes and role != "banned":
-                # self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
                 users[username]["role"] = "banned"
                 self._save_users(users)
@@ -80,7 +81,6 @@ class Telegram:
             max_strikes = self.config.max_strikes
 
             if strikes >= max_strikes and role != "banned":
-                # self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
                 users[username]["role"] = "banned"
                 self._save_users(users)
@@ -120,27 +120,31 @@ class Telegram:
             text = (message.text or "").strip()
             pending = self.pending_tokens.get(username)     # returns none if the user has no pending auth token
 
-            # TODO: if the user happens to not have a strikes field in their data the program doesn't know how to respond (to fix)
-
             if pending is None:
                 return
             
             elif text != pending.get("auth_token"):
                 if not users[username]:
                     self.bot.send_message(message.chat.id, "Invalid authentication token.")
-                    if strikes >= (max_strikes - 1): self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
-                    else: self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
+                    self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
                     users[username] = {
                         "role": "unauthenticated",
                         "chat_id": message.chat.id,
                         "strikes": 1
-                    }                    
+                    }
+
+                # TODO: fix edge case here
+                # this does not account for the eventuality the user edits user_data.json manually
+
                 elif role == "unauthenticated":
                     self.bot.send_message(message.chat.id, "Invalid authentication token.")
-                    if strikes >= (max_strikes - 1): self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication retries. Your account will be banned.")
-                    else: self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
+                    if strikes >= (max_strikes - 1):
+                        self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication attempts. Your account will be banned.")
+                        users[username]["role"] = "banned"
+                    else:
+                        self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
                     users[username]["strikes"] = strikes + 1
-                    self._save_users(users)
+                self._save_users(users)
                 return
 
             del self.pending_tokens[username]
@@ -206,7 +210,7 @@ class Telegram:
         self.users_file.write_text(
             json.dumps(users, indent=4, sort_keys=True) + "\n",
             encoding="utf-8",
-        )        
+        )
 
     @staticmethod
     def _get_username(message: telebot.types.Message) -> str:
