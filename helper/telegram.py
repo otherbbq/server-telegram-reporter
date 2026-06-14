@@ -45,15 +45,7 @@ class Telegram:
             strikes = users.get(username, {}).get("strikes")
             max_strikes = self.config.max_strikes
 
-            # this check is redundant. It only checks the validity of all the data inside user_data.json
-            # TODO: bundle this code inside a function
-            
-            if strikes >= max_strikes and role != "banned":
-                self.bot.send_message(message.chat.id, "You are banned from authenticating.")
-                users[username]["role"] = "banned"
-                self._save_users(users)
-                logging.info(f"{username} has been banned after exceding the maximum ammount of strikes.")
-                return
+            role = self._check_strikerole_uniformity(username, strikes, max_strikes, role, users)
 
             if role == "banned":
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
@@ -80,12 +72,7 @@ class Telegram:
             strikes = users.get(username, {}).get("strikes")
             max_strikes = self.config.max_strikes
 
-            if strikes >= max_strikes and role != "banned":
-                self.bot.send_message(message.chat.id, "You are banned from authenticating.")
-                users[username]["role"] = "banned"
-                self._save_users(users)
-                logging.info(f"{username} has been banned after exceding the maximum ammount of strikes.")
-                return
+            role = self._check_strikerole_uniformity(username, strikes, max_strikes, role, users)
 
             # TODO: add reasons to bans
             if role == "banned":
@@ -211,6 +198,14 @@ class Telegram:
             json.dumps(users, indent=4, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+    
+    def _check_strikerole_uniformity(self, username: str, strikes: int, max_strikes: int, role: str, users: dict[str, dict[str, int | str | None]] = None) -> str:
+        users = users or self._load_users()    # allow users to be passed in to avoid unneeded strain on the disk
+        if strikes >= max_strikes and role != "banned":
+            users[username]["role"] = "banned"
+            self._save_users(users)
+            logging.info(f"{username} has been banned after exceding the maximum ammount of strikes (uniformity check).")
+        return users[username]["role"]
 
     @staticmethod
     def _get_username(message: telebot.types.Message) -> str:
