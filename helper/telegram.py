@@ -26,7 +26,6 @@ class Telegram:
 
     def send_message_to_authenticated_users(self, text: str) -> None:
         users = self._load_users()
-
         for username, data in users.items():
             if data["role"] == "authenticated":
                 chat_id = data.get("chat_id")
@@ -74,7 +73,7 @@ class Telegram:
 
             role = self._check_strikerole_uniformity(username, strikes, max_strikes, role, users)
 
-            # TODO: add reasons to bans
+            # TODO: add reasons to bans in logging messages
             if role == "banned":
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
                 return
@@ -119,10 +118,6 @@ class Telegram:
                         "chat_id": message.chat.id,
                         "strikes": 1
                     }
-
-                # TODO: fix edge case here
-                # this does not account for the eventuality the user edits user_data.json manually
-
                 elif role == "unauthenticated":
                     self.bot.send_message(message.chat.id, "Invalid authentication token.")
                     if strikes >= (max_strikes - 1):
@@ -210,8 +205,6 @@ class Telegram:
     @staticmethod
     def _get_username(message: telebot.types.Message) -> str:
         user = message.from_user
-
         if user is None:
             return f"chat_{message.chat.id}"
-
         return user.username or f"id_{user.id}"
