@@ -6,8 +6,6 @@ import telebot
 from helper.config import Config
 
 class Telegram:
-    # TODO: add custom config file paths by adding execution flags
-
     def __init__(self, token: str, users_file: str = "user_data.json") -> None:
         self.config= Config(f"{Path(__file__).parent.parent}/config.json")
         self.token = token
@@ -73,7 +71,6 @@ class Telegram:
 
             role = self._check_strikerole_uniformity(username, strikes, max_strikes, role, users)
 
-            # TODO: add reasons to bans in logging messages
             if role == "banned":
                 self.bot.send_message(message.chat.id, "You are banned from authenticating.")
                 return
@@ -122,6 +119,7 @@ class Telegram:
                     self.bot.send_message(message.chat.id, "Invalid authentication token.")
                     if strikes >= (max_strikes - 1):
                         self.bot.send_message(message.chat.id, "You have exceded the maximum ammout of authentication attempts. Your account will be banned.")
+                        logging.info(f"{username} has been banned after exceding the maximum ammount of strikes.")
                         users[username]["role"] = "banned"
                     else:
                         self.bot.send_message(message.chat.id, "Request a new one with /authenticate or /start.")
@@ -137,7 +135,6 @@ class Telegram:
             }
             self._save_users(users)
             self.bot.send_message(message.chat.id, "You have been authenticated.")
-            # TODO: edit the logging handler and make it send logs to authenticated users (the user should be able to set logging level)
             logging.info(f"{username} has authenticated to the bot.")
 
     def _load_users(self) -> dict[str, dict[str, int | str | None]]:

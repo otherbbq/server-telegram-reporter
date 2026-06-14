@@ -4,6 +4,8 @@ import sys
 from helper.telegram import Telegram
 
 def main() -> None:
+    # TODO: add custom config file paths by adding execution flags
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
