@@ -8,6 +8,7 @@ class Config:
         self.file = Path(config_file)
         self.config = {}
         self.default_configs = {
+            "log_path": "",
             "max_strikes": 5
         }
 

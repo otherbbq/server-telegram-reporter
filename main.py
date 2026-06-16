@@ -1,14 +1,28 @@
 import logging
 import os
 import sys
+from pathlib import Path
+from datetime import date
+
 from helper.telegram import Telegram
+from helper.config import Config
 
 def main() -> None:
     # TODO: add custom config file paths by adding execution flags
 
+    config = Config(f"{Path(__file__).parent}/config.json")
+    config.load_configs()
+
+    log_file = Path(config.log_path) / f"{date.today()}_log.txt" if config.log_path else Path(__file__).parent / "log" / f"{date.today()}_log.txt"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(log_file)
+        ]
     )
 
     token = os.getenv("TG_BOT_TOKEN")
@@ -18,7 +32,7 @@ def main() -> None:
             "Missing bot token. Set TG_BOT_TOKEN."
         )
 
-    bot = Telegram(token)
+    bot = Telegram(token, config=config)
     bot.run()
 
 

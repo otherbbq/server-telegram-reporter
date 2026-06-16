@@ -3,11 +3,13 @@ import logging
 import secrets
 from pathlib import Path
 import telebot
+from datetime import datetime
+
 from helper.config import Config
 
 class Telegram:
-    def __init__(self, token: str, users_file: str = "user_data.json") -> None:
-        self.config= Config(f"{Path(__file__).parent.parent}/config.json")
+    def __init__(self, token: str, users_file: str = "user_data.json", config: Config | None = None) -> None:
+        self.config = config or Config(f"{Path(__file__).parent.parent}/config.json")
         self.token = token
         self.bot = telebot.TeleBot(token)
         self.users_file = Path(users_file)
@@ -58,7 +60,7 @@ class Telegram:
                 "chat_id": message.chat.id,
             }
 
-            logging.info("Authentication token for @%s: %s", username, auth_token)
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Authentication token for @{username}: {auth_token}") # console only output
             self.bot.send_message(message.chat.id, "Paste authentication token in this chat")
         
         @self.bot.message_handler(commands=["authenticate"])
