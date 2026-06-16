@@ -1,6 +1,6 @@
 import logging
 import os
-import sys
+import argparse
 from pathlib import Path
 from datetime import date
 
@@ -8,9 +8,11 @@ from helper.telegram import Telegram
 from helper.config import Config
 
 def main() -> None:
-    # TODO: add custom config file paths by adding execution flags
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", default=f"{Path(__file__).parent}/config.json")
+    args = parser.parse_args()
 
-    config = Config(f"{Path(__file__).parent}/config.json")
+    config = Config(args.config)
     config.load_configs()
 
     log_file = Path(config.log_path) / f"{date.today()}_log.txt" if config.log_path else Path(__file__).parent / "log" / f"{date.today()}_log.txt"
