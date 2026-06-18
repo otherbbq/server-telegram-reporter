@@ -58,3 +58,7 @@ Authenticated users are stored in `user_data.json`.
 ## Status
 
 This project is still in development.
+
+Planned features are:
+
+- Better telegram wrapper
