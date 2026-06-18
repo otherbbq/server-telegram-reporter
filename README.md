@@ -24,6 +24,17 @@ Run the bot:
 python main.py
 ```  
 
+## Plugins  
+
+To install a new plugin just drop the file/folder inside `plugins/user`
+
+The loader supports two plugin layouts:
+
+- Single-file plugins: a `.py` file that defines one or more classes inheriting from `plugins.base.PluginBase`.
+- Package plugins: a folder that contains an `__init__.py` file. The plugin class must live in `__init__.py`, inherit from `plugins.base.PluginBase`.
+
+The existing plugin in `plugins/builtin` is a good example of the single-file layout.
+
 ## Authentication
 
 After the bot is up and running you have to authenticate your account.  
@@ -47,7 +58,3 @@ Authenticated users are stored in `user_data.json`.
 ## Status
 
 This project is still in development.
-
-Planned features are:  
-- Custom behaviour support
-- Better logging
